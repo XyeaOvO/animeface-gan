@@ -13,13 +13,12 @@ from anime_gan.data.datamodule import AnimeFaceDataModule
 from anime_gan.lit.dcgan_module import DCGANModule
 from anime_gan.utils.callbacks import FidelityCallback, SampleImageCallback
 from anime_gan.utils.paths import resolve_path
-from anime_gan.utils.seed import seed_everything
 
 
 @hydra.main(version_base="1.3", config_path="../../conf", config_name="config")
 def main(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
-    seed_everything(cfg.seed)
+    pl.seed_everything(cfg.seed, workers=True)
 
     # wandb environment
     os.environ.setdefault("WANDB_MODE", cfg.logger.wandb.mode)
