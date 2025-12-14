@@ -61,3 +61,12 @@ class SampleImageCallback(pl.Callback):
             samples = pl_module(noise)
         grid_path = pl_module.samples_dir / f"epoch_{epoch:04d}.png"
         save_image_grid(samples, grid_path, nrow=int(self.num_samples**0.5))
+        if pl_module.logger is not None and hasattr(pl_module.logger, "experiment"):
+            try:
+                pl_module.logger.experiment.log(
+                    {"samples/epoch": [pl_module.logger.experiment.Image(str(grid_path))]},
+                    step=trainer.global_step,
+                )
+            except Exception:
+                # Keep training even if logging fails
+                pass
