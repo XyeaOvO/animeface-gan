@@ -29,6 +29,8 @@ class FidelityCallback(pl.Callback):
         self.work_dir = work_dir
 
     def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+        if trainer.global_rank != 0:
+            return
         epoch = trainer.current_epoch
         if (epoch + 1) % self.every_n_epochs != 0:
             return
