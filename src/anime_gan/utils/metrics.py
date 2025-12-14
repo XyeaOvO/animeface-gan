@@ -13,7 +13,10 @@ from anime_gan.utils.images import denormalize
 
 def _reset_dir(path: Path) -> None:
     if path.exists():
-        shutil.rmtree(path)
+        try:
+            shutil.rmtree(path)
+        except FileNotFoundError:
+            pass
     path.mkdir(parents=True, exist_ok=True)
 
 
