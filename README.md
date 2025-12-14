@@ -30,6 +30,7 @@
 ## wandb 使用
 - 默认 `logger.wandb.mode=offline`，离线缓存位于每次 Hydra 输出目录下的 `wandb/`。
 - 切换在线：覆写 `logger.wandb.mode=online`（可配合环境变量 `WANDB_ENTITY`）。
+- 若未指定 `logger.wandb.run_name` 会自动用当前 `YYYYmmdd_HHMMSS` 作为 run 名称，也可在 `conf/logger/wandb.yaml` 里固定名字。
 - 离线同步：`wandb sync outputs/<date>/<time>/wandb/offline-run-*`。
 
 ## wandb Sweep

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytorch_lightning as pl
 import torch
+import wandb
 
 from anime_gan.utils.images import save_image_grid
 from anime_gan.utils.metrics import compute_fid_is
@@ -62,16 +63,23 @@ class SampleImageCallback(pl.Callback):
         noise = torch.randn(self.num_samples, pl_module.hparams.z_dim, device=pl_module.device)
         with torch.no_grad():
             samples = pl_module(noise)
+
         grid_path = pl_module.samples_dir / f"{tag}.png"
         save_image_grid(samples, grid_path, nrow=int(self.num_samples**0.5))
-        if pl_module.logger is not None and hasattr(pl_module.logger, "experiment"):
-            try:
-                pl_module.logger.experiment.log(
-                    {"samples": [pl_module.logger.experiment.Image(str(grid_path))]},
-                    step=trainer.global_step,
-                )
-            except Exception:
-                pass
+
+        if pl_module.logger is not None:
+            experiment = getattr(pl_module.logger, "experiment", None)
+            
+            if hasattr(experiment, "log"):
+                try:
+                    experiment.log(
+                        {
+                            "samples": [wandb.Image(str(grid_path), caption=tag)]
+                        },
+                        step=trainer.global_step,
+                    )
+                except Exception as e:
+                    print(f"Logging to WandB failed: {e}")
 
     def on_train_batch_end(
         self,

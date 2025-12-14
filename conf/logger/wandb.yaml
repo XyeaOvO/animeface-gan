@@ -3,3 +3,4 @@ wandb:
   entity: null
   mode: online
   log_model: false
+  run_name: null

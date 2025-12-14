@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from pathlib import Path
 
 import hydra
@@ -61,12 +62,14 @@ def main(cfg: DictConfig) -> None:
             )
         )
 
+    run_name = cfg.logger.wandb.run_name or datetime.now().strftime("%Y%m%d_%H%M%S")
     logger = WandbLogger(
         project=cfg.logger.wandb.project,
         entity=cfg.logger.wandb.entity,
         mode=cfg.logger.wandb.mode,
         save_dir=str(Path.cwd()),
         log_model=cfg.logger.wandb.log_model,
+        name=run_name,
     )
 
     trainer = pl.Trainer(
