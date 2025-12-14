@@ -21,7 +21,7 @@
   ```bash
   uv run python -m anime_gan.train \
     trainer.max_epochs=1 trainer.limit_train_batches=2 trainer.limit_val_batches=0 \
-    model.sample_every_n_steps=1 model.sample_grid_size=4 \
+    model.sample_grid_size=4 \
     dataset.batch_size=8 logger.wandb.mode=offline eval.enabled=false
   ```
 - 常用 Hydra 覆盖示例：`trainer.max_epochs=10 dataset.batch_size=64 logger.wandb.mode=online eval.sample_size=512`。

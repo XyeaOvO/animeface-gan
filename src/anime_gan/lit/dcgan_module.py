@@ -34,7 +34,6 @@ class DCGANModule(pl.LightningModule):
         beta2: float = 0.999,
         scheduler_t_max_epochs: int | None = None,
         scheduler_eta_min: float = 0.0,
-        sample_every_n_steps: int = 200,
         sample_grid_size: int = 64,
         loss_cfg: GANLossConfig | None = None,
     ) -> None:
@@ -117,9 +116,6 @@ class DCGANModule(pl.LightningModule):
 
         self.log("loss_d", d_loss, prog_bar=True, on_step=True, on_epoch=True)
         self.log("loss_g", g_loss, prog_bar=True, on_step=True, on_epoch=True)
-
-        if batch_idx % self.hparams.sample_every_n_steps == 0:
-            self._log_samples(global_step=self.global_step)
 
         return {"loss": d_loss + g_loss}
 
