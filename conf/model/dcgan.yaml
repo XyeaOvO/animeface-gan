@@ -1,7 +1,8 @@
 z_dim: 128
 g_features: 128
 d_features: 128
-lr: 0.0002
+lr_g: 2e-4
+lr_d: 5e-5
 weight_decay: 0.01
 beta1: 0.5
 beta2: 0.999

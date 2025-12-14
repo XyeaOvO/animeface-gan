@@ -28,7 +28,8 @@ class DCGANModule(pl.LightningModule):
         z_dim: int = 128,
         g_features: int = 128,
         d_features: int = 128,
-        lr: float = 2e-4,
+        lr_g: float = 2e-4,
+        lr_d: float = 2e-4,
         weight_decay: float = 0.0,
         beta1: float = 0.5,
         beta2: float = 0.999,
@@ -64,13 +65,13 @@ class DCGANModule(pl.LightningModule):
     def configure_optimizers(self) -> tuple[list[Optimizer], list[Any]]:
         opt_g = AdamW(
             self.generator.parameters(),
-            lr=self.hparams.lr,
+            lr=self.hparams.lr_g,
             weight_decay=self.hparams.weight_decay,
             betas=(self.hparams.beta1, self.hparams.beta2),
         )
         opt_d = AdamW(
             self.discriminator.parameters(),
-            lr=self.hparams.lr,
+            lr=self.hparams.lr_d,
             weight_decay=self.hparams.weight_decay,
             betas=(self.hparams.beta1, self.hparams.beta2),
         )
@@ -115,8 +116,15 @@ class DCGANModule(pl.LightningModule):
         self.manual_backward(g_loss)
         opt_g.step()
 
-        self.log("loss_d", d_loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log("loss_g", g_loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("loss/d_total", d_loss, prog_bar=True, on_step=True)
+        self.log("loss/g", g_loss, prog_bar=True, on_step=True)
+        
+        self.log("loss/d_real", d_loss_real, on_step=True)
+        self.log("loss/d_fake", d_loss_fake, on_step=True)
+
+        with torch.no_grad():
+            self.log("probs/d_real_avg", torch.sigmoid(real_pred).mean(), on_step=True)
+            self.log("probs/d_fake_avg", torch.sigmoid(fake_pred).mean(), on_step=True)
 
         return {"loss": d_loss + g_loss}
 
