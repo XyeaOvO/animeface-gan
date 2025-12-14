@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pytorch_lightning as pl
 import torch
@@ -19,6 +19,7 @@ from anime_gan.utils.images import save_image_grid
 
 @dataclass
 class GANLossConfig:
+    loss_type: Literal["bce", "hinge"] = "bce"
     label_smoothing: float = 0.0
 
 
@@ -52,6 +53,9 @@ class DCGANModule(pl.LightningModule):
         self.example_input_array = torch.randn(1, z_dim)
         self.register_buffer("fixed_noise", torch.randn(sample_grid_size, z_dim))
         self.loss_cfg = loss_cfg or GANLossConfig()
+        self.loss_type = getattr(self.loss_cfg, "loss_type", "bce")
+        if self.loss_type not in ("bce", "hinge"):
+            raise ValueError(f"Unsupported GAN loss type: {self.loss_type}")
 
         self.samples_dir = Path("samples")
 
@@ -81,20 +85,22 @@ class DCGANModule(pl.LightningModule):
         return [opt_d, opt_g], [sched_d, sched_g]
 
     def _smooth_labels(self, value: float, size: int) -> Tensor:
-        if self.loss_cfg.label_smoothing <= 0:
+        smoothing = getattr(self.loss_cfg, "label_smoothing", 0.0)
+        if smoothing <= 0:
             return torch.full((size, 1), value, device=self.device)
-        delta = self.loss_cfg.label_smoothing
         if value == 1.0:
-            return torch.empty(size, 1, device=self.device).uniform_(1 - delta, 1)
-        return torch.empty(size, 1, device=self.device).uniform_(0, delta)
+            return torch.empty(size, 1, device=self.device).uniform_(1 - smoothing, 1)
+        return torch.empty(size, 1, device=self.device).uniform_(0, smoothing)
 
     def training_step(self, batch: ImageBatch, batch_idx: int) -> dict[str, float]:
         opt_d, opt_g = self.optimizers()
         real_images = batch.images
         batch_size = real_images.size(0)
 
-        valid = self._smooth_labels(1.0, batch_size)
-        fake = self._smooth_labels(0.0, batch_size)
+        valid = fake = None
+        if self.loss_type == "bce":
+            valid = self._smooth_labels(1.0, batch_size)
+            fake = self._smooth_labels(0.0, batch_size)
 
         # --- Train Discriminator ---
         opt_d.zero_grad(set_to_none=True)
@@ -102,8 +108,12 @@ class DCGANModule(pl.LightningModule):
         noise_batch = NoiseBatch(z=torch.randn(batch_size, self.hparams.z_dim, device=self.device))
         fake_images = self(noise_batch.z).detach()
         fake_pred = self.discriminator(fake_images)
-        d_loss_real = self.criterion(real_pred, valid)
-        d_loss_fake = self.criterion(fake_pred, fake)
+        if self.loss_type == "hinge":
+            d_loss_real = torch.relu(1 - real_pred).mean()
+            d_loss_fake = torch.relu(1 + fake_pred).mean()
+        else:
+            d_loss_real = self.criterion(real_pred, valid)
+            d_loss_fake = self.criterion(fake_pred, fake)
         d_loss = 0.5 * (d_loss_real + d_loss_fake)
         self.manual_backward(d_loss)
         opt_d.step()
@@ -112,13 +122,15 @@ class DCGANModule(pl.LightningModule):
         opt_g.zero_grad(set_to_none=True)
         regenerated = self(noise_batch.z)
         gen_pred = self.discriminator(regenerated)
-        g_loss = self.criterion(gen_pred, valid)
+        if self.loss_type == "hinge":
+            g_loss = -gen_pred.mean()
+        else:
+            g_loss = self.criterion(gen_pred, valid)
         self.manual_backward(g_loss)
         opt_g.step()
 
         self.log("loss/d_total", d_loss, prog_bar=True, on_step=True)
         self.log("loss/g", g_loss, prog_bar=True, on_step=True)
-        
         self.log("loss/d_real", d_loss_real, on_step=True)
         self.log("loss/d_fake", d_loss_fake, on_step=True)
 
