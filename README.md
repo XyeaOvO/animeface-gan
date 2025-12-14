@@ -53,6 +53,7 @@
 - 形状标注与校验：`Generator.forward`/`Discriminator.forward` 使用 jaxtyping 标注并加 `@typechecked`；训练步在 `anime_gan.lit.dcgan_module.DCGANModule.training_step`。
 - 显式维度变换：统一用 `einops.rearrange`（如判别器 logits 展平）；避免隐式 `view/permute`。
 - 命名约定：中间变量标注维度后缀（如 `images_bchw`），便于排查。
+- 由于 Lightning 已提供 `seed_everything`，项目内不再重复实现。
 
 ## 代码风格与 Git 规范
 - 代码检查：`ruff` + `ruff-format`（见 `.pre-commit-config.yaml`），推荐 `pre-commit install`。
