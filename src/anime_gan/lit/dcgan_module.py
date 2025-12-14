@@ -8,7 +8,7 @@ import pytorch_lightning as pl
 import torch
 from jaxtyping import Float
 from torch import Tensor, nn
-from torch.optim import AdamW
+from torch.optim import AdamW, Optimizer
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from typeguard import check_type, typechecked
 
@@ -61,7 +61,7 @@ class DCGANModule(pl.LightningModule):
         check_type(generated, Float[Tensor, "batch 3 128 128"])
         return generated
 
-    def configure_optimizers(self) -> tuple[list[Adam], list[Any]]:
+    def configure_optimizers(self) -> tuple[list[Optimizer], list[Any]]:
         opt_g = AdamW(
             self.generator.parameters(),
             lr=self.hparams.lr,
@@ -81,11 +81,11 @@ class DCGANModule(pl.LightningModule):
 
     def _smooth_labels(self, value: float, size: int) -> Tensor:
         if self.loss_cfg.label_smoothing <= 0:
-            return torch.full((size,), value, device=self.device)
+            return torch.full((size, 1), value, device=self.device)
         delta = self.loss_cfg.label_smoothing
         if value == 1.0:
-            return torch.empty(size, device=self.device).uniform_(1 - delta, 1)
-        return torch.empty(size, device=self.device).uniform_(0, delta)
+            return torch.empty(size, 1, device=self.device).uniform_(1 - delta, 1)
+        return torch.empty(size, 1, device=self.device).uniform_(0, delta)
 
     def training_step(self, batch: ImageBatch, batch_idx: int) -> dict[str, float]:
         opt_d, opt_g = self.optimizers()
@@ -122,6 +122,11 @@ class DCGANModule(pl.LightningModule):
             self._log_samples(global_step=self.global_step)
 
         return {"loss": d_loss + g_loss}
+
+    def on_train_epoch_end(self) -> None:
+        schedulers = self.lr_schedulers()
+        for scheduler in schedulers:
+            scheduler.step()
 
     @torch.no_grad()
     def _log_samples(self, global_step: int) -> None:

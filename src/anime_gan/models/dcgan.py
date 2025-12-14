@@ -86,8 +86,8 @@ class Discriminator(nn.Module):
     def forward(self, images: Tensor) -> Tensor:
         check_type(images, Float[Tensor, "batch 3 128 128"])
         logits_map = self.net(images)
-        logits = logits_map.mean(dim=(1, 2, 3))
-        check_type(logits, Float[Tensor, "batch"])
+        logits = rearrange(logits_map, "b c h w -> b (c h w)")
+        check_type(logits, Float[Tensor, "batch 1"])
         return logits
 
 
