@@ -2,8 +2,11 @@ z_dim: 128
 g_features: 128
 d_features: 128
 lr: 0.0002
+weight_decay: 0.01
 beta1: 0.5
 beta2: 0.999
+scheduler_t_max_epochs: null
+scheduler_eta_min: 0.0
 sample_every_n_steps: 100
 sample_grid_size: 16
 loss_cfg:

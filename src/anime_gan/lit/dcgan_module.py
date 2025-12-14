@@ -8,7 +8,8 @@ import pytorch_lightning as pl
 import torch
 from jaxtyping import Float
 from torch import Tensor, nn
-from torch.optim import Adam
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from typeguard import check_type, typechecked
 
 from anime_gan.data.datamodule import ImageBatch
@@ -28,8 +29,11 @@ class DCGANModule(pl.LightningModule):
         g_features: int = 128,
         d_features: int = 128,
         lr: float = 2e-4,
+        weight_decay: float = 0.0,
         beta1: float = 0.5,
         beta2: float = 0.999,
+        scheduler_t_max_epochs: int | None = None,
+        scheduler_eta_min: float = 0.0,
         sample_every_n_steps: int = 200,
         sample_grid_size: int = 64,
         loss_cfg: GANLossConfig | None = None,
@@ -58,17 +62,22 @@ class DCGANModule(pl.LightningModule):
         return generated
 
     def configure_optimizers(self) -> tuple[list[Adam], list[Any]]:
-        opt_g = Adam(
+        opt_g = AdamW(
             self.generator.parameters(),
             lr=self.hparams.lr,
+            weight_decay=self.hparams.weight_decay,
             betas=(self.hparams.beta1, self.hparams.beta2),
         )
-        opt_d = Adam(
+        opt_d = AdamW(
             self.discriminator.parameters(),
             lr=self.hparams.lr,
+            weight_decay=self.hparams.weight_decay,
             betas=(self.hparams.beta1, self.hparams.beta2),
         )
-        return [opt_d, opt_g], []
+        t_max = self.hparams.scheduler_t_max_epochs or self.trainer.max_epochs
+        sched_d = CosineAnnealingLR(opt_d, T_max=t_max, eta_min=self.hparams.scheduler_eta_min)
+        sched_g = CosineAnnealingLR(opt_g, T_max=t_max, eta_min=self.hparams.scheduler_eta_min)
+        return [opt_d, opt_g], [sched_d, sched_g]
 
     def _smooth_labels(self, value: float, size: int) -> Tensor:
         if self.loss_cfg.label_smoothing <= 0:
