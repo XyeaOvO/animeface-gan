@@ -1,0 +1,15 @@
+defaults:
+  - dataset: animeface128
+  - model: dcgan
+  - trainer: default
+  - logger: wandb
+  - eval: default
+  - _self_
+
+seed: 42
+
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: true

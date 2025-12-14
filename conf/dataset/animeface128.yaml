@@ -1,0 +1,8 @@
+data_dir: data/animeface128
+batch_size: 64
+num_workers: 4
+pin_memory: true
+subset_name: default
+split: train
+image_size: 128
+eval_subset: 2048

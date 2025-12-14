@@ -1,0 +1,9 @@
+max_epochs: 5
+accelerator: auto
+devices: 1
+precision: 32
+log_every_n_steps: 10
+limit_train_batches: 1.0
+limit_val_batches: 1.0
+detect_anomaly: false
+enable_checkpointing: true

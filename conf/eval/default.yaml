@@ -1,0 +1,4 @@
+enabled: true
+sample_size: 256
+batch_size: 32
+every_n_epochs: 5

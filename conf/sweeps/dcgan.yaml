@@ -1,0 +1,25 @@
+name: dcgan-animeface
+method: bayes
+metric:
+  name: metrics/fid
+  goal: minimize
+parameters:
+  model.lr:
+    values: [0.0001, 0.0002, 0.0005]
+  model.z_dim:
+    values: [64, 96, 128]
+  model.g_features:
+    values: [96, 128, 160]
+  model.d_features:
+    values: [96, 128, 160]
+  dataset.batch_size:
+    values: [32, 64]
+  seed:
+    values: [1, 42, 123]
+command:
+  - uv
+  - run
+  - python
+  - -m
+  - anime_gan.train
+  - ${args}
