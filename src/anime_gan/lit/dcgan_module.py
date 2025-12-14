@@ -34,6 +34,7 @@ class DCGANModule(pl.LightningModule):
         beta2: float = 0.999,
         scheduler_t_max_epochs: int | None = None,
         scheduler_eta_min: float = 0.0,
+        sample_every_n_steps: int = 200,
         sample_grid_size: int = 64,
         loss_cfg: GANLossConfig | None = None,
     ) -> None:

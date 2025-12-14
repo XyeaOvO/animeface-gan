@@ -47,26 +47,49 @@ class FidelityCallback(pl.Callback):
 
 
 class SampleImageCallback(pl.Callback):
-    def __init__(self, num_samples: int = 16, every_n_epochs: int = 1) -> None:
+    def __init__(
+        self,
+        num_samples: int = 16,
+        every_n_steps: int | None = None,
+        every_n_epochs: int | None = 1,
+    ) -> None:
         super().__init__()
         self.num_samples = num_samples
-        self.every_n_epochs = max(1, every_n_epochs)
+        self.every_n_steps = every_n_steps
+        self.every_n_epochs = every_n_epochs
 
-    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        epoch = trainer.current_epoch
-        if (epoch + 1) % self.every_n_epochs != 0:
-            return
+    def _log_samples(self, trainer: pl.Trainer, pl_module: pl.LightningModule, tag: str) -> None:
         noise = torch.randn(self.num_samples, pl_module.hparams.z_dim, device=pl_module.device)
         with torch.no_grad():
             samples = pl_module(noise)
-        grid_path = pl_module.samples_dir / f"epoch_{epoch:04d}.png"
+        grid_path = pl_module.samples_dir / f"{tag}.png"
         save_image_grid(samples, grid_path, nrow=int(self.num_samples**0.5))
         if pl_module.logger is not None and hasattr(pl_module.logger, "experiment"):
             try:
                 pl_module.logger.experiment.log(
-                    {"samples/epoch": [pl_module.logger.experiment.Image(str(grid_path))]},
+                    {"samples": [pl_module.logger.experiment.Image(str(grid_path))]},
                     step=trainer.global_step,
                 )
             except Exception:
-                # Keep training even if logging fails
                 pass
+
+    def on_train_batch_end(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        outputs: None | dict,
+        batch: torch.Tensor,
+        batch_idx: int,
+    ) -> None:
+        if self.every_n_steps is None:
+            return
+        if trainer.global_step > 0 and trainer.global_step % self.every_n_steps == 0:
+            self._log_samples(trainer, pl_module, tag=f"step_{trainer.global_step:06d}")
+
+    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+        if self.every_n_epochs is None:
+            return
+        epoch = trainer.current_epoch
+        if (epoch + 1) % max(1, self.every_n_epochs) != 0:
+            return
+        self._log_samples(trainer, pl_module, tag=f"epoch_{epoch:04d}")

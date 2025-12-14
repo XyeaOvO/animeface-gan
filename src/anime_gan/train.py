@@ -41,7 +41,11 @@ def main(cfg: DictConfig) -> None:
             save_last=True,
         ),
         LearningRateMonitor(logging_interval="epoch"),
-        SampleImageCallback(num_samples=cfg.model.sample_grid_size, every_n_epochs=1),
+        SampleImageCallback(
+            num_samples=cfg.model.sample_grid_size,
+            every_n_steps=cfg.model.sample_every_n_steps,
+            every_n_epochs=1,
+        ),
     ]
 
     if cfg.eval.enabled:
