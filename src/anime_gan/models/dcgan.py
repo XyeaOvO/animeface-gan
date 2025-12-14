@@ -66,20 +66,37 @@ class Discriminator(nn.Module):
         super().__init__()
         self.feature_maps = feature_maps
         self.net = nn.Sequential(
+            # Input: 3 x 128 x 128
             spectral_norm(
                 nn.Conv2d(3, feature_maps, kernel_size=4, stride=2, padding=1, bias=False)
             ),
             nn.LeakyReLU(0.2, inplace=True),
+            # State: f x 64 x 64
+            
             spectral_norm(nn.Conv2d(feature_maps, feature_maps * 2, 4, 2, 1, bias=False)),
             nn.BatchNorm2d(feature_maps * 2),
             nn.LeakyReLU(0.2, inplace=True),
+            # State: (f*2) x 32 x 32
+            
             spectral_norm(nn.Conv2d(feature_maps * 2, feature_maps * 4, 4, 2, 1, bias=False)),
             nn.BatchNorm2d(feature_maps * 4),
             nn.LeakyReLU(0.2, inplace=True),
+            # State: (f*4) x 16 x 16
+            
             spectral_norm(nn.Conv2d(feature_maps * 4, feature_maps * 8, 4, 2, 1, bias=False)),
             nn.BatchNorm2d(feature_maps * 8),
             nn.LeakyReLU(0.2, inplace=True),
-            spectral_norm(nn.Conv2d(feature_maps * 8, 1, 4, 1, 0, bias=False)),
+            # State: (f*8) x 8 x 8
+
+            spectral_norm(nn.Conv2d(feature_maps * 8, feature_maps * 16, 4, 2, 1, bias=False)),
+            nn.BatchNorm2d(feature_maps * 16),
+            nn.LeakyReLU(0.2, inplace=True),
+            # State: (f*16) x 4 x 4
+            # -------------------------------
+
+            # Final Layer: 4x4 -> 1x1
+            spectral_norm(nn.Conv2d(feature_maps * 16, 1, 4, 1, 0, bias=False)),
+            # Output: 1 x 1 x 1 (Logits)
         )
 
     @typechecked

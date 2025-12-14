@@ -1,5 +1,5 @@
 wandb:
   project: animeface-gan
   entity: null
-  mode: offline
+  mode: online
   log_model: false

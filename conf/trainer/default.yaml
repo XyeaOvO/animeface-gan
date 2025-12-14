@@ -1,7 +1,9 @@
-max_epochs: 5
+max_epochs: 100
 accelerator: auto
-devices: 1
-precision: 32
+devices: auto
+strategy: ddp_find_unused_parameters_true
+precision: bf16-mixed
+sync_batchnorm: True
 log_every_n_steps: 10
 limit_train_batches: 1.0
 limit_val_batches: 1.0

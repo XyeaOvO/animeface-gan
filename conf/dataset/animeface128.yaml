@@ -1,6 +1,6 @@
 data_dir: data/animeface128
 batch_size: 64
-num_workers: 4
+num_workers: 8
 pin_memory: true
 subset_name: default
 split: train

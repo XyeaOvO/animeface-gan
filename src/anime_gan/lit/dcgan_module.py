@@ -49,7 +49,7 @@ class DCGANModule(pl.LightningModule):
         self.criterion = nn.BCEWithLogitsLoss()
         self.automatic_optimization = False
         self.example_input_array = torch.randn(1, z_dim)
-        self.fixed_noise = torch.randn(sample_grid_size, z_dim)
+        self.register_buffer("fixed_noise", torch.randn(sample_grid_size, z_dim))
         self.loss_cfg = loss_cfg or GANLossConfig()
 
         self.samples_dir = Path("samples")
