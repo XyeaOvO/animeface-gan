@@ -10,7 +10,7 @@ wheels/
 .venv
 
 # Project artifacts
-data/
+/data/
 outputs/
 wandb/
 .ruff_cache/
